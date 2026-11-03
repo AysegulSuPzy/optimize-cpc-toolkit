@@ -9,7 +9,7 @@ Reads: titles_draft.json  {"NN": {"title": "...", "seo_title": "...", "tier_trig
 Writes: titles_final.json on 0 FAIL — the push input.
 """
 import json, os, re, sys
-from head_check import sing, same, STOP
+from head_check import sing, same, STOP, SYN
 from source_windows import norm as sw_norm, windows as sw_windows
 
 KW = {}
@@ -58,8 +58,20 @@ for nn, d in sorted(T.items()):
     # captured keywords
     captured = [k for k in KW if KW[k]["v"] > 0 and k in tl]
     if not captured: F(nn, "title captures no measured keyword")
+    # the CPC gate runs on maximal phrases only: a sub-phrase of a longer captured keyword (`vision device` inside
+    # `night vision device`) is a measurement artefact of source windows, not a keyword the title was built on
+    maximal = [k for k in captured if not any(k != o and k in o for o in captured)]
+    def canon(w):
+        w = sing(w)
+        for syn in SYN:
+            if w in syn: return min(syn)
+        return w
+    def fam(k): return frozenset(canon(w) for w in words(k)) - SW        # singular/plural + synonym + word-order family
+    def reason_for(k):
+        rs = SR.get(nn) or {}
+        return rs.get(k) or next((r for kk, r in rs.items() if fam(kk) == fam(k)), None)
     # §1/§4.2 CPC gate on every captured keyword
-    for k in captured:
+    for k in maximal:
         if KW[k]["cpc"] <= 0: F(nn, f"'{k}' has no measured CPC (0/null) — not allowed in a title (cpc_unknown)")
         elif KW[k]["cpc"] >= ceil: F(nn, f"'{k}' cpc ${KW[k]['cpc']:.2f} >= ceiling ${ceil:.2f}" + (" (exception ceiling)" if S["ceiling_exception"] else ""))
     # opener: first comma segment up to the head noun
@@ -80,7 +92,7 @@ for nn, d in sorted(T.items()):
             if legal:
                 best_v, best_c, best_k = legal[0]
                 if KW[top_in]["v"] < best_v and best_k not in phrase and wset(best_k) != pset:
-                    reason = (SR.get(nn) or {}).get(best_k)
+                    reason = reason_for(best_k)
                     if reason: M(nn, f"opener '{phrase}' ({KW[top_in]['v']:,}) below legal best '{best_k}' ({best_v:,}, ${best_c:.2f}) — reason: {reason}")
                     else: F(nn, f"'{best_k}' ({best_v:,}, ${best_c:.2f}) is the highest-volume legal opener but the opener is '{phrase}' ({KW[top_in]['v']:,}) — open on it or write a reason in skip_reasons.json")
             if S["ceiling_exception"]:
@@ -88,11 +100,11 @@ for nn, d in sorted(T.items()):
                 if not any(k in three for k in inside): F(nn, f"ceiling exception: opener must be one of the three cheapest head-noun keywords {sorted(three)}")
     # §4.7 unused legal cluster bigger than the weakest non-opener captured keyword
     non_opener = [k for k in captured if hi is not None and k not in " ".join(segw[:hi + 1]).lower()]
-    weakest = min((KW[k]["v"] for k in non_opener), default=0)
+    weakest = min((KW[k]["v"] for k in non_opener if KW[k]["v"] >= 1000), default=0)   # clusters are >= 1,000 phrases; smaller captures are incidental
     for v, c, k in S["cluster_candidates"]:
-        if k in tl or any(wset(k) == wset(x) for x in captured): continue
+        if k in tl or any(fam(k) == fam(x) for x in captured): continue
         if v >= 1000 and v > weakest and weakest > 0:
-            reason = (SR.get(nn) or {}).get(k)
+            reason = reason_for(k)
             if reason: M(nn, f"unused '{k}' ({v:,}, ${c:.2f}) > weakest cluster ({weakest:,}) — reason: {reason}")
             else: F(nn, f"unused legal keyword '{k}' ({v:,}, ${c:.2f}) beats the weakest non-opener cluster ({weakest:,}) — use it or write a reason in skip_reasons.json")
             break
@@ -101,7 +113,8 @@ for nn, d in sorted(T.items()):
     if not st: F(nn, "seo_title missing")
     elif len(st) >= 70: F(nn, f"seo.title {len(st)} chars >= 70")
     else:
-        for k in [k for k in KW if KW[k]["v"] > 0 and k in st.lower()]:
+        stc = [k for k in KW if KW[k]["v"] > 0 and k in st.lower()]
+        for k in [k for k in stc if not any(k != o and k in o for o in stc)]:
             if KW[k]["cpc"] <= 0 or KW[k]["cpc"] >= ceil: F(nn, f"seo.title keyword '{k}' fails the CPC gate (${KW[k]['cpc']:.2f})")
     # old-vs-new volume: WARN only (§4.9)
     old_cap = sum(KW[k]["v"] for k in KW if KW[k]["v"] > 0 and k in S["old_title"].lower())

@@ -8,7 +8,7 @@ Recompute a line whenever its file changes: `sha256sum ./<file>`.
 412fbd154d3b125e55ed4ccc27a0a3adbe0ec832fca884400ee5258e3b7f595d  ./CPC-TITLE-SPEC.md
 690a21195ab08f2c76534b2f0182c284d79e947f5b5eb185fb4725dccaaa8948  ./README-toolkit.md
 18af4fa1108f5c83e8773ec4d1a27cf8fc2bdfa77ce14e11f979e44055cf15e7  ./cap.py
-94d5c3b9875bd8e6b2a4d663d5846bf463fd89c7408cc43c48961f4d7e50c99a  ./cpc_check.py
+9609eb890b54ea0e628e73f6b7313c55eefd49677a133d691b45431f0cc6da8e  ./cpc_check.py
 963c48d71c09456251b45846c2e98fa194da30a6227d6bf0e18eb2e102c07f9d  ./cpc_select.py
 5ebf0929ffd19440a0a984e8bef01fafa7de05e78150a0629ea0c442be959740  ./fetch.py
 b172ebe12906d7f84182c11605cec312000d2847718cf93c40cc58a7e622fdba  ./head_check.py
