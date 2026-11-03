@@ -1,0 +1,6 @@
+secrets/
+rules/dataforseo-credentials.md
+dataforseo-credentials.md
+__pycache__/
+work/
+*.pyc

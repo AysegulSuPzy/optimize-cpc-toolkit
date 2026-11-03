@@ -1,0 +1,23 @@
+# MANIFEST — sha256 of every toolkit file (00-SESSION-START.md Step B)
+
+Recompute a line whenever its file changes: `sha256sum ./<file>`.
+
+```
+8980cd79554d6a2fb7155b2086657e9aa6ec5b90ccea07a72d808d1b30c1c6fc  ./00-SESSION-START.md
+53819414d48d1809163598966a6e7b8db342ba2bcfd43ebbd08c80522152f4a3  ./CANDIDATES-SPEC.md
+412fbd154d3b125e55ed4ccc27a0a3adbe0ec832fca884400ee5258e3b7f595d  ./CPC-TITLE-SPEC.md
+690a21195ab08f2c76534b2f0182c284d79e947f5b5eb185fb4725dccaaa8948  ./README-toolkit.md
+18af4fa1108f5c83e8773ec4d1a27cf8fc2bdfa77ce14e11f979e44055cf15e7  ./cap.py
+94d5c3b9875bd8e6b2a4d663d5846bf463fd89c7408cc43c48961f4d7e50c99a  ./cpc_check.py
+963c48d71c09456251b45846c2e98fa194da30a6227d6bf0e18eb2e102c07f9d  ./cpc_select.py
+5ebf0929ffd19440a0a984e8bef01fafa7de05e78150a0629ea0c442be959740  ./fetch.py
+b172ebe12906d7f84182c11605cec312000d2847718cf93c40cc58a7e622fdba  ./head_check.py
+3338fb4510aa32b831bddfd602f5acb3f1e469d341d55a6757f5ad20605a5399  ./kw_measure.py
+b93411325476e3ec0736a67091715b619079275983ab689929b6fe0316de918a  ./push.py
+49af74705b5afc152b449f395b53bb044075166571a9a2dc1247e421ece2b246  ./revert.py
+6157135c599aa45442f508cde75a1546f2a69b324bfa3536285f336fb291836b  ./rules/cpc-title-rule.md
+ddc35c46017ec4803cd5a433efe108ade47316705356c5357a55bdba496f6a12  ./rules/title-format-rule.md
+bcf4e2141bb512b7b93da750e2be4a12879e5f067a313bfb407ab6d7dbacc27f  ./shopify_api.py
+57c8dfd0dc944c0f2295e8ef7f10f856fd2fe11ad6c87a2f0e341ed3a5491c71  ./source_windows.py
+37c6f6f3cf1090f27c70ba099f24328e424584bf40c4d40fb663d429ad53c49d  ./verify.py
+```
