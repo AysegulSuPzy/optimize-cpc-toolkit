@@ -1,4 +1,4 @@
-# Optimize CPC — Project Description (Vepine)
+# Optimize CPC — Project Description (multi-store)
 
 Purpose: rewrite product titles + SEO titles so Google Shopping / PMax matches the product to queries that are **high-volume but cheap (CPC < $2.00)** and that **truly describe the product**. Everything else (descriptions, prices, status, tags, images) is untouched unless the brief says otherwise.
 
@@ -43,12 +43,12 @@ Expensive keywords are not lost: every discarded keyword goes into `rejects.json
 
 ---
 
-## 2. Candidate pool — identical to the backend project (README-toolkit.md step 4, EXTRACT-SPEC.md)
+## 2. Candidate pool — identical to the backend project (README-toolkit.md step 2, CANDIDATES-SPEC.md)
 
 1. **Extraction agent** (main model, never Haiku) writes `candidates/cNN.json` per product: **40–70 keyword strings a US Google shopper would type for this product** — head nouns singular AND plural, modifier+noun clusters, use-case/audience tails, synonyms, **and the neighbouring product families expected to FAIL product fit** (they must be measured, never rejected unmeasured). Lowercase, no brand names, no spec values like "48khz". Must include the exact words of the old title's first phrase.
 2. **`python3 source_windows.py products.json`** (script, zero tokens): every contiguous 2–4-word window of every source title becomes a candidate. It only ADDS; fit decides later.
 3. **Measure everything in one pass:** cNN.json ∪ source_windows.txt → `kw_measure.py` → DataForSEO (≤950 keywords per call). **Word-order guard:** keywords that are the same words in a different order go in SEPARATE calls (Google folds them and returns the low variant for both). Output `kw.txt` as `keyword|volume|competition|cpc` (kw_measure.py format; **cpc 0 = null/unknown**); `kw-cache-<tag>.md` goes to outputs, not to the project.
-4. A keyword used in a title but absent from kw.txt is a push-blocking FAIL — measure it in one extra call (TITLE-SPEC step 1b), never guess.
+4. A keyword used in a title but absent from kw.txt is a push-blocking FAIL — measure it in one extra call (CPC-TITLE-SPEC step 5), never guess.
 
 No DataForSEO suggestion/related-keyword expansion; the pool is the extraction list + source windows, exactly as in the backend project.
 
@@ -92,21 +92,21 @@ Structure: `[Opener keyword] – [Cluster 2] – [defining attribute / size / ma
 **Phase 0 — Scope** (write Q0 credentials to secrets/shopify.json, query shop name + domain, state it. Manual: confirm store + brief, ask test-run question. Scheduled: one line, go.)
 **Phase 1 — Fetch** in-scope products via shopify_api.py → products.json (id, handle, title, productType, category, seo, descriptionHtml for seeds only). Snapshot old titles.
 **Phase 2 — Candidates + DataForSEO** per §2 → kw.txt, candidates/cNN.json.
-**Phase 3 — Fit + gates** per §1 → build_check.py FR patterns, rejects.json (with volume + cpc + reason).
+**Phase 3 — Fit + gates** per §1 → fit_rejects.json (regex per product, written by the main context) → `cpc_select.py --ceiling <Q2>` → select/sNN.json + rejects.json (fit / cpc_over / cpc_unknown, each with volume + cpc).
 **Phase 4 — Titles** in one small-context subagent (main model, never Haiku) per §3 → titles_final.json (id, handle, old_title, new_title, len, opener, opener_cpc, captured[], rejected_expensive[], tier, trigger). Q5 = Manual: show top-5 candidates + proposed title per product, wait for user; Q5 = Auto: agent decides fit, logs every rejection.
-**Phase 5 — Checks** per §4 until 0 FAIL. Write `claude/backup-titles-<tag>.md` (old title, old SEO title, new title, opener cpc) to the project BEFORE push — only after user approval of the run (project docs are never written without explicit approval).
-**Phase 6 — Push** productUpdate batches of 10 (title + seo{title, description}), status per Q3. userErrors logged, batch never stops for one product.
-**Phase 7 — Verify** re-fetch 3 products, compare to titles_final.json; summary: N pushed, N failed, N ceiling exceptions.
+**Phase 5 — Checks** per §4: `cpc_check.py` + `head_check.py` until 0 FAIL → titles_final.json. Write `claude/backup-titles-<tag>.md` (old title, old SEO title, new title, opener cpc) to the project BEFORE push — only after user approval of the run (project docs are never written without explicit approval).
+**Phase 6 — Push** `push.py`: productUpdate batches of 10 (title + seo{title, description}), status per Q3. userErrors logged, batch never stops for one product.
+**Phase 7 — Verify** `verify.py`: re-fetch every pushed product, compare to titles_final.json; summary: N pushed, N failed, N ceiling exceptions.
 
 Context rules: no per-product progress, no schema dumps, ≤ 50-char progress lines, all JSON offline.
 
-**Revert.** `Revert <tag>` (with Q0 for the store) restores every product of that run from `claude/backup-titles-<tag>.md`: old title + old SEO title, seo.description copied from the live product (never nulled), batches of 10, then verify 3 products. Nothing else is touched. Manual: confirm store + count first; Scheduled: not allowed — revert is always manual.
+**Revert.** `Revert <tag>` (with Q0 for the store) restores every product of that run from `claude/backup-titles-<tag>.md` via `revert.py`: old title + old SEO title, seo.description copied from the live product (never nulled), batches of 10, then verify 3 products. Nothing else is touched. Manual: confirm store + count first; Scheduled: not allowed — revert is always manual.
 
 ---
 
 ## 6. Rejects → description (second net)
 
-Keywords rejected ONLY for CPC (fit-clean, high volume) are listed in `rejects.json.expensive`. They are allowed in the product description's first paragraph / key features so the page still ranks organically; they never appear in title or SEO title. This is a separate optional step (description rewrite per the backend project rules), not part of a title run.
+Keywords rejected ONLY for CPC (fit-clean, high volume) are listed in `rejects.json` under `cpc_over`. They are allowed in the product description's first paragraph / key features so the page still ranks organically; they never appear in title or SEO title. This is a separate optional step (description rewrite per the backend project rules), not part of a title run.
 
 ---
 
